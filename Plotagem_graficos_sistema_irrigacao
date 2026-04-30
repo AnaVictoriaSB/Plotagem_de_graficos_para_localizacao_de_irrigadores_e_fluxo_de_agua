@@ -1,0 +1,138 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+
+def simulacao_irrigacao():
+    
+    d = 2
+    h = 2.8 + 0.1 * d
+    
+    # Entrada de dados
+    print('--- Captação de dados da área a ser irrigada ---')
+    C = float(input('Coloque o comprimento da área em metros: '))
+    L = float(input('Coloque a largura da área em metros: '))
+    
+    print('As bombas podem ser tipo A, B e C com velocidades 2, 4 e 6 m/s')
+    
+    bombas = ['A', 'B', 'C']
+    velocidades = [2, 4, 6]
+    angulos = [30, 40, 45]
+    
+    g = 9.81
+    
+    alcances = []
+    tempos_voo = []
+    
+    # Cálculos
+    for i_bomba in range(3):
+        v0 = velocidades[i_bomba]
+        alcances_linha = []
+        tempos_linha = []
+        
+        for theta in angulos:
+            theta_rad = math.radians(theta)
+            
+            # Tempo de voo
+            a = -0.5 * g
+            b = v0 * math.sin(theta_rad)
+            c = h
+            
+            delta = b**2 - 4*a*c
+            
+            t1 = (-b + math.sqrt(delta)) / (2*a)
+            t2 = (-b - math.sqrt(delta)) / (2*a)
+            
+            tempo = max(t1, t2)
+            
+            # Alcance
+            alcance = v0 * math.cos(theta_rad) * tempo
+            
+            alcances_linha.append(alcance)
+            tempos_linha.append(tempo)
+            
+            print(f'Bomba {bombas[i_bomba]} ({v0} m/s), Ângulo {theta}°')
+            print(f'Tempo de voo: {tempo:.3f} s')
+            print(f'Alcance: {alcance:.2f} m\n')
+        
+        alcances.append(alcances_linha)
+        tempos_voo.append(tempos_linha)
+    
+    # Melhor configuração
+    print('~~BUSCA DA MELHOR CONFIGURAÇÃO~~')
+    
+    max_alcance = 0
+    
+    for i in range(3):
+        for j in range(3):
+            alcance_atual = alcances[i][j]
+            print(f'Testando Bomba {bombas[i]} ({angulos[j]}°): {alcance_atual:.2f} m\n')
+            
+            if alcance_atual > max_alcance:
+                max_alcance = alcance_atual
+                melhor_bomba_idx = i
+                melhor_angulo_idx = j
+    
+    # Resultados
+    print('\n~~RESULTADOS FINAIS~~\n')
+    
+    print('MELHOR CONFIGURAÇÃO:')
+    print(f'. Bomba: {bombas[melhor_bomba_idx]} ({velocidades[melhor_bomba_idx]} m/s)')
+    print(f'. Ângulo: {angulos[melhor_angulo_idx]}°')
+    print(f'. Alcance máximo: {max_alcance:.2f} m\n')
+    
+    # Número de aspersores
+    num_asp_x = math.ceil(C / max_alcance)
+    num_asp_y = math.ceil(L / max_alcance)
+    total = num_asp_x * num_asp_y
+    
+    print('~~DISTRIBUIÇÃO~~\n')
+    print(f'Aspersores no comprimento: {num_asp_x}')
+    print(f'Aspersores na largura: {num_asp_y}')
+    print(f'TOTAL: {total}')
+    
+    # GRÁFICO 1 - trajetória
+    plt.figure()
+    plt.subplot(1,2,1)
+    
+    v0_opt = velocidades[melhor_bomba_idx]
+    theta_opt = math.radians(angulos[melhor_angulo_idx])
+    tempo_opt = tempos_voo[melhor_bomba_idx][melhor_angulo_idx]
+    
+    for _ in range(3):
+        t = np.linspace(0, tempo_opt, 100)
+        x = v0_opt * np.cos(theta_opt) * t
+        y = h + v0_opt * np.sin(theta_opt) * t - 0.5 * g * t**2
+        
+        plt.plot(x, y)
+    
+    plt.plot([0, max(x)], [0, 0])
+    plt.title('Trajetória das Gotas')
+    plt.xlabel('Distância (m)')
+    plt.ylabel('Altura (m)')
+    plt.grid()
+    
+    # GRÁFICO 2 - distribuição
+    plt.subplot(1,2,2)
+    
+    plt.title('Distribuição dos Aspersores')
+    plt.gca().add_patch(plt.Rectangle((0,0), C, L, fill=False))
+    
+    dist_x = C / num_asp_x
+    dist_y = L / num_asp_y
+    
+    for i in range(num_asp_x):
+        for j in range(num_asp_y):
+            x = (i + 0.5) * dist_x
+            y = (j + 0.5) * dist_y
+            plt.plot(x, y, 'o')
+    
+    plt.axis('equal')
+    plt.xlabel('Comprimento (m)')
+    plt.ylabel('Largura (m)')
+    plt.grid()
+    
+    plt.show()
+
+
+if __name__ == "__main__":
+    simulacao_irrigacao()
